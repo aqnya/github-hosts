@@ -48,7 +48,15 @@ jobs:
         if: steps.commit.outputs.status == 'failure'
         run: exit 1
 
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push the retrained profile
+        run: |
+          set -euxo pipefail
+          # The source commit goes into the body: the freshness check reads it
+          # back on the next run to decide whether another retrain is worth it.
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PROFILE"
+          git commit \
+            -m "ci: update host"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
